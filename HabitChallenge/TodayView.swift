@@ -76,7 +76,7 @@ struct HabitItem: Identifiable, Hashable {
     let currentValue: Int
     let targetValue: Int
     let unit: String
-    let challengeSummary: String?
+    let rank: String?
     let eventSummary: String?
     let hasActiveCard: Bool
     let isCompleted: Bool
@@ -88,14 +88,14 @@ struct HabitItem: Identifiable, Hashable {
 
     static let sampleData: [HabitItem] = [
         HabitItem(
-            title: "Lesen",
+            title: "Lesechallenge",
             icon: "book.fill",
             tint: .blue,
             currentValue: 6,
             targetValue: 20,
             unit: "Seiten",
-            challengeSummary: "Lesechallenge · Platz 2",
-            eventSummary: "Intensivtag aktiv: heute 20 statt 10 Seiten",
+            rank: "2",
+            eventSummary: "Intensivtag: heute 20 statt 10 Seiten",
             hasActiveCard: true,
             isCompleted: false
         ),
@@ -106,7 +106,7 @@ struct HabitItem: Identifiable, Hashable {
             currentValue: 1,
             targetValue: 1,
             unit: "Session",
-            challengeSummary: "Workout Crew · Platz 1",
+            rank: "1",
             eventSummary: nil,
             hasActiveCard: false,
             isCompleted: true
@@ -118,7 +118,7 @@ struct HabitItem: Identifiable, Hashable {
             currentValue: 25,
             targetValue: 30,
             unit: "Min",
-            challengeSummary: nil,
+            rank: "3",
             eventSummary: "Neue Karte gespielt in deiner Fokusgruppe",
             hasActiveCard: false,
             isCompleted: false
@@ -170,12 +170,13 @@ struct SummaryChip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.secondary)
 
             Text(value)
-                .font(.headline)
+                .font(.title2)
                 .foregroundStyle(.primary)
+                .bold()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -234,16 +235,25 @@ struct HabitCardView: View {
                                 .clipShape(Capsule())
                         }
                     }
-
+                    HStack{
+                        Image(systemName: "trophy.fill")
+                            .font(.subheadline)
+                        
+                        if let rank = habit.rank {
+                            Text("\(rank). Platz")
+                                .font(.headline)
+                        }
+                            
+                        
+                    }
+                    
+                    Spacer()
+                        
                     Text("\(habit.currentValue) / \(habit.targetValue) \(habit.unit)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    if let challengeSummary = habit.challengeSummary {
-                        Text(challengeSummary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    
                 }
 
                 Spacer()
@@ -312,9 +322,14 @@ struct HabitDetailView: View {
                         title: habit.title,
                         icon: habit.icon,
                         tint: habit.tint,
-                        challengeSummary: habit.challengeSummary,
+                        rank: habit.rank,
                         eventSummary: habit.eventSummary,
                         isCompleted: isCompleted
+                    )
+                    
+                    RankCard(
+                        rank: habit.rank,
+                        points: 400
                     )
 
                     ProgressSectionCard(
@@ -351,7 +366,7 @@ struct HabitHeroCard: View {
     let title: String
     let icon: String
     let tint: Color
-    let challengeSummary: String?
+    let rank: String?
     let eventSummary: String?
     let isCompleted: Bool
 
@@ -372,24 +387,32 @@ struct HabitHeroCard: View {
                     Text(title)
                         .font(.title2.bold())
 
-                    if let challengeSummary {
-                        Text(challengeSummary)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                    //if let rank {
+                        //Text(rank)
+                            //.font(.headline)
+                            //.foregroundStyle(.secondary)
+                    //}
                 }
 
                 Spacer()
             }
 
             if let eventSummary {
-                Label(eventSummary, systemImage: "sparkles")
-                    .font(.subheadline)
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color.orange.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Label {
+                    Text(eventSummary)
+                        .lineLimit(nil)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } icon: {
+                    Image(systemName: "sparkles")
+                }
+                .font(.headline)
+                .foregroundStyle(.orange)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
 
             if isCompleted {
@@ -403,6 +426,48 @@ struct HabitHeroCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
+// MARK: - Rank
+
+struct RankCard: View {
+    let rank: String?
+    let points: Int
+    //let unit: String
+    //let progress: Double
+    //let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack{
+                Text("Platzierung")
+                    .font(.title2)
+                    .bold()
+                Spacer()
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(.yellow)
+            }
+
+            HStack(spacing: 12) {
+                SummaryChip(
+                    title: "Rang",
+                    value: rank ?? "-",
+                    color: .blue
+                )
+
+                SummaryChip(
+                    title: "Punkte",
+                    value: "\(String(points))",
+                    color: .orange
+                )
+            }
+
+
+        }
+        .padding()
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
 
 // MARK: - Progress
 
@@ -416,7 +481,8 @@ struct ProgressSectionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Heutiger Fortschritt")
-                .font(.headline)
+                .font(.title2)
+                .bold()
 
             HStack(alignment: .lastTextBaseline) {
                 Text("\(enteredValue)")
@@ -452,7 +518,8 @@ struct InputSectionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Eintragen")
-                .font(.headline)
+                .font(.title2)
+                .bold()
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Heute geschafft")
