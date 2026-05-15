@@ -36,6 +36,7 @@ struct TodayView: View {
                             Text("Deine Habits")
                                 .font(.title2.bold())
                                 .padding(.horizontal)
+                                .foregroundStyle(.primary)
 
                             ForEach(habits) { habit in
                                 NavigationLink {
@@ -200,7 +201,7 @@ struct ChallengeEventBanner: View {
             Spacer()
         }
         .padding()
-        .background(Color.orange.opacity(0.10))
+        .background(Color.orange.opacity(0.50))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
@@ -438,12 +439,12 @@ struct RankCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack{
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.title2)
                 Text("Platzierung")
                     .font(.title2)
                     .bold()
-                Spacer()
-                Image(systemName: "trophy.fill")
-                    .foregroundStyle(.yellow)
             }
 
             HStack(spacing: 12) {
@@ -587,17 +588,6 @@ struct ActionSectionCard: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Button {
-                // später: Wert speichern
-            } label: {
-                Text("Fortschritt speichern")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(tint)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            }
 
             Button {
                 isCompleted.toggle()
@@ -620,4 +610,6 @@ struct ActionSectionCard: View {
 
 #Preview {
     TodayView()
+        .preferredColorScheme(.dark)
 }
+
