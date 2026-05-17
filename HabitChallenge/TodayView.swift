@@ -134,13 +134,52 @@ struct HabitItem: Identifiable, Hashable {
 // MARK: - AddHabitView
 
 struct AddHabitView: View {
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 6)
+
+    private let habitSymbols = [
+        "book.fill",
+        "bookmark.fill",
+        "pencil",
+        "brain.head.profile",
+        "laptopcomputer",
+        "keyboard",
+        
+        "figure.walk",
+        "figure.run",
+        "figure.strengthtraining.traditional",
+        "bicycle",
+        "dumbbell.fill",
+        "sportscourt.fill",
+        
+        "heart.fill",
+        "bed.double.fill",
+        "moon.fill",
+        "alarm.fill",
+        "drop.fill",
+        "pills.fill",
+        
+        "fork.knife",
+        "carrot.fill",
+        "cup.and.saucer.fill",
+        "takeoutbag.and.cup.and.straw.fill",
+        "waterbottle.fill",
+        "leaf.fill",
+        
+        "person.2.fill",
+        "message.fill",
+        "phone.fill",
+        "music.note",
+        "gamecontroller.fill",
+        "star.fill"
+    ]
+    
     @Environment(\.dismiss) private var dismiss
     @Binding var habits: [HabitItem]
     
     @State private var title = ""
-    @State private var icon = "star.fill"
+    @State private var icon = ""
     @State private var targetValue = 1
-    @State private var unit = "Mal"
+    @State private var unit = ""
     @State private var selectedColor: Color = .blue
     
     var body: some View {
@@ -148,16 +187,65 @@ struct AddHabitView: View {
             Form {
                 Section("Neues Habit") {
                     TextField("Titel", text: $title)
+                        .textInputAutocapitalization(.never)
                     TextField("Einheit", text: $unit)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     TextField("Zielwert", value: $targetValue, format: .number)
                         .keyboardType(.numberPad)
                 }
                 
-                Section("Darstellung") {
-                    TextField("SF Symbol", text: $icon)
-                    
+                Section("Symbol") {
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(habitSymbols, id: \.self) { symbol in
+                            Button {
+                                icon = symbol
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(icon == symbol ? selectedColor.opacity(0.18) : Color(.tertiarySystemGroupedBackground))
+
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(icon == symbol ? selectedColor : Color.clear, lineWidth: 1.5)
+
+                                    Image(systemName: symbol)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(icon == symbol ? selectedColor : .primary)
+                                }
+                                .frame(height: 42)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Section("Farbe") {
                     ColorPicker("Farbe", selection: $selectedColor)
                 }
+                Section("Vorschau") {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(selectedColor.opacity(0.15))
+                                .frame(width: 42, height: 42)
+
+                            Image(systemName: icon)
+                                .foregroundStyle(selectedColor)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title.isEmpty ? "Neues Habit" : title)
+                                .font(.headline)
+
+                            Text("0 / \(max(targetValue, 1)) \(unit.isEmpty ? "Mal" : unit)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                
             }
             .navigationTitle("Neues Habit")
             .navigationBarTitleDisplayMode(.inline)
@@ -396,7 +484,8 @@ struct HabitDetailView: View {
                     
                     RankCard(
                         rank: habit.rank,
-                        points: 400
+                        points: 400,
+                        tint: habit.tint
                     )
 
                     ProgressSectionCard(
@@ -498,9 +587,7 @@ struct HabitHeroCard: View {
 struct RankCard: View {
     let rank: String?
     let points: Int
-    //let unit: String
-    //let progress: Double
-    //let tint: Color
+    let tint: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -517,13 +604,13 @@ struct RankCard: View {
                 SummaryChip(
                     title: "Rang",
                     value: rank ?? "-",
-                    color: .blue
+                    color: tint
                 )
 
                 SummaryChip(
                     title: "Punkte",
                     value: "\(String(points))",
-                    color: .orange
+                    color: .yellow
                 )
             }
 
