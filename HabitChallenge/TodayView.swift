@@ -1,9 +1,9 @@
 //
-//  ContentView.swift
 //  HabitChallenge
 //
 //  Created by Erik Götz on 11.05.26.
 //
+//  MARK: - TodayView
 
 import SwiftUI
 
@@ -39,9 +39,9 @@ struct TodayView: View {
                                 .padding(.horizontal)
                                 .foregroundStyle(.primary)
 
-                            ForEach(habits) { habit in
+                            ForEach($habits) { $habit in
                                 NavigationLink {
-                                    HabitDetailView(habit: habit)
+                                    HabitDetailView(habit: $habit)
                                 } label: {
                                     HabitCardView(habit: habit)
                                 }
@@ -54,7 +54,7 @@ struct TodayView: View {
                     .padding(.bottom, 24)
                 }
             }
-            .navigationTitle("Heute")
+            .navigationTitle("Habit-Übersicht")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -71,20 +71,56 @@ struct TodayView: View {
     }
 }
 
+// MARK: - ENUMs
+
+enum HabitType: String, CaseIterable, Identifiable {
+    case binary
+    case measurable
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .binary:
+            return "erledigt/nicht erledigt"
+        case .measurable:
+            return "Zahlenwert"
+        }
+    }
+}
+
+enum HabitFrequency: String, CaseIterable, Identifiable {
+    case daily
+    case weekly
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .daily:
+            return "Täglich"
+        case .weekly:
+            return "Wöchentlich"
+        }
+    }
+}
+
 // MARK: - Model
 
 struct HabitItem: Identifiable, Hashable {
     let id: UUID = UUID()
-    let title: String
-    let icon: String
-    let tint: Color
-    let currentValue: Int
-    let targetValue: Int
-    let unit: String
-    let rank: String?
-    let eventSummary: String?
-    let hasActiveCard: Bool
-    let isCompleted: Bool
+        var title: String
+        var icon: String
+        var tint: Color
+        var type: HabitType
+        var frequency: HabitFrequency
+        var currentValue: Int
+        var targetValue: Int
+        var unit: String
+        var rank: String?
+        var eventSummary: String?
+        var hasActiveCard: Bool
+        var isCompleted: Bool
 
     var progress: Double {
         guard targetValue > 0 else { return 0 }
@@ -96,11 +132,13 @@ struct HabitItem: Identifiable, Hashable {
             title: "Lesechallenge",
             icon: "book.fill",
             tint: .blue,
-            currentValue: 6,
+            type: .measurable,
+            frequency: .daily,
+            currentValue: 0,
             targetValue: 20,
             unit: "Seiten",
             rank: "2",
-            eventSummary: "Intensivtag: heute 20 statt 10 Seiten",
+            eventSummary: nil,
             hasActiveCard: true,
             isCompleted: false
         ),
@@ -108,23 +146,27 @@ struct HabitItem: Identifiable, Hashable {
             title: "Workout",
             icon: "figure.strengthtraining.traditional",
             tint: .green,
-            currentValue: 1,
+            type: .binary,
+            frequency: .weekly,
+            currentValue: 0,
             targetValue: 1,
             unit: "Session",
             rank: "1",
             eventSummary: nil,
             hasActiveCard: false,
-            isCompleted: true
+            isCompleted: false
         ),
         HabitItem(
             title: "Lernen",
             icon: "brain.head.profile",
             tint: .purple,
-            currentValue: 25,
+            type: .measurable,
+            frequency: .daily,
+            currentValue: 0,
             targetValue: 30,
             unit: "Min",
             rank: "3",
-            eventSummary: "Neue Karte gespielt in deiner Fokusgruppe",
+            eventSummary: nil,
             hasActiveCard: false,
             isCompleted: false
         )
@@ -160,7 +202,7 @@ struct AddHabitView: View {
         
         "fork.knife",
         "carrot.fill",
-        "cup.and.saucer.fill",
+        "xmark.circle",
         "takeoutbag.and.cup.and.straw.fill",
         "waterbottle.fill",
         "leaf.fill",
@@ -181,19 +223,76 @@ struct AddHabitView: View {
     @State private var targetValue = 1
     @State private var unit = ""
     @State private var selectedColor: Color = .blue
+    @State private var selectedType: HabitType = .measurable
+    @State private var selectedFrequency: HabitFrequency = .daily
     
     var body: some View {
         NavigationStack {
-            Form {
+            Form{
                 Section("Neues Habit") {
                     TextField("Titel", text: $title)
                         .textInputAutocapitalization(.never)
-                    TextField("Einheit", text: $unit)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    TextField("Zielwert", value: $targetValue, format: .number)
-                        .keyboardType(.numberPad)
+                    Picker("Frequenz", selection: $selectedFrequency) {
+                        ForEach(HabitFrequency.allCases) { frequency in
+                            Text(frequency.title).tag(frequency)
+                        }
+                    }
                 }
+                
+                Section("Habittyp verstehen") {
+                    HabitTypePreviewCard(
+                        title: "Mit Zielwert",
+                        subtitle: "Für Gewohnheiten mit Menge, Dauer oder Anzahl.",
+                        previewText: "0 / 30 Min",
+                        icon: "chart.bar.fill",
+                        isSelected: selectedType == .measurable,
+                        tint: selectedColor,
+                        action: {
+                            selectedType = .measurable
+                        }
+                    )
+                    
+                    HabitTypePreviewCard(
+                        title: "Einfach abhaken",
+                        subtitle: "Für Gewohnheiten, die du nur als erledigt markierst.",
+                        previewText: "Heute erledigt?",
+                        icon: "checkmark.circle",
+                        isSelected: selectedType == .binary,
+                        tint: selectedColor,
+                        action: {
+                            selectedType = .binary
+                        }
+                    )
+                }
+
+                /*Section("Auswahl") {
+                    HabitTypeSelectionRow(
+                        title: "Einfach abhaken",
+                        isSelected: selectedType == .binary
+                    ) {
+                        selectedType = .binary
+                    }
+
+                    HabitTypeSelectionRow(
+                        title: "Mit Zielwert",
+                        isSelected: selectedType == .measurable
+                    ) {
+                        selectedType = .measurable
+                    }
+                }*/
+                
+                if selectedType == .measurable{
+                    Section("Einheit & Zielwert"){
+
+                        TextField("Einheit", text: $unit)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        TextField("Zielwert", value: $targetValue, format: .number)
+                                .keyboardType(.numberPad)
+                    }
+                }
+                
                 
                 Section("Symbol") {
                     LazyVGrid(columns: columns, spacing: 8) {
@@ -260,11 +359,13 @@ struct AddHabitView: View {
                     Button("Speichern") {
                         let newHabit = HabitItem(
                             title: title,
-                            icon: icon,
+                            icon: icon.isEmpty ? "star.fill" : icon,
                             tint: selectedColor,
+                            type: selectedType,
+                            frequency: selectedFrequency,
                             currentValue: 0,
-                            targetValue: max(targetValue, 1),
-                            unit: unit.isEmpty ? "Mal" : unit,
+                            targetValue: selectedType == .binary ? 1 : max(targetValue, 1),
+                            unit: selectedType == .binary ? "Erledigt" : (unit.isEmpty ? "Mal" : unit),
                             rank: nil,
                             eventSummary: nil,
                             hasActiveCard: false,
@@ -278,6 +379,82 @@ struct AddHabitView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - HabitTypeOptionCard
+
+struct HabitTypePreviewCard: View {
+    let title: String
+    let subtitle: String
+    let previewText: String
+    let icon: String
+    let isSelected: Bool
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .foregroundStyle(tint)
+
+                    Text(title)
+                        .font(.headline)
+
+                    Spacer()
+
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(tint)
+                    }
+                }
+
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text(previewText)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color(.tertiarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? tint : Color.clear, lineWidth: 2)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+//MARK: - HabitTypeSelectionRow
+struct HabitTypeSelectionRow: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -378,9 +555,10 @@ struct HabitCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text(habit.title)
-                            .font(.headline)
+                            .font(.title3)
+                            .bold()
 
-                        if habit.hasActiveCard {
+                        /*if habit.hasActiveCard {
                             Text("Karte aktiv")
                                 .font(.caption.weight(.semibold))
                                 .padding(.horizontal, 8)
@@ -388,21 +566,21 @@ struct HabitCardView: View {
                                 .background(Color.orange.opacity(0.14))
                                 .foregroundStyle(.orange)
                                 .clipShape(Capsule())
-                        }
+                        }*/
                     }
-                    HStack{
-                        Image(systemName: "trophy.fill")
+                    //HStack{
+                        //Image(systemName: "trophy.fill")
                             .font(.subheadline)
                         
-                        if let rank = habit.rank {
-                            Text("\(rank). Platz")
+                        //if let rank = habit.rank {
+                            //Text("\(rank). Platz")
                                 .font(.headline)
-                        }
+                        //}
                             
                         
-                    }
+                    //}
                     
-                    Spacer()
+                    //Spacer()
                         
                     Text("\(habit.currentValue) / \(habit.targetValue) \(habit.unit)")
                         .font(.subheadline)
@@ -447,23 +625,14 @@ struct HabitCardView: View {
     }
 }
 
-// MARK: - Placeholder Detail View
+// MARK: - Habit Detail View
 
 struct HabitDetailView: View {
-    let habit: HabitItem
-
-    @State private var enteredValue: Int
-    @State private var isCompleted: Bool
-
-    init(habit: HabitItem) {
-        self.habit = habit
-        _enteredValue = State(initialValue: habit.currentValue)
-        _isCompleted = State(initialValue: habit.isCompleted)
-    }
+    @Binding var habit: HabitItem
 
     var progress: Double {
         guard habit.targetValue > 0 else { return 0 }
-        return min(Double(enteredValue) / Double(habit.targetValue), 1.0)
+        return min(Double(habit.currentValue) / Double(habit.targetValue), 1.0)
     }
 
     var body: some View {
@@ -479,9 +648,9 @@ struct HabitDetailView: View {
                         tint: habit.tint,
                         rank: habit.rank,
                         eventSummary: habit.eventSummary,
-                        isCompleted: isCompleted
+                        isCompleted: habit.isCompleted
                     )
-                    
+
                     RankCard(
                         rank: habit.rank,
                         points: 400,
@@ -489,7 +658,7 @@ struct HabitDetailView: View {
                     )
 
                     ProgressSectionCard(
-                        enteredValue: enteredValue,
+                        enteredValue: habit.currentValue,
                         targetValue: habit.targetValue,
                         unit: habit.unit,
                         progress: progress,
@@ -497,13 +666,13 @@ struct HabitDetailView: View {
                     )
 
                     InputSectionCard(
-                        value: $enteredValue,
+                        value: $habit.currentValue,
                         targetValue: habit.targetValue,
                         unit: habit.unit
                     )
 
                     ActionSectionCard(
-                        isCompleted: $isCompleted,
+                        isCompleted: $habit.isCompleted,
                         tint: habit.tint
                     )
                 }
@@ -513,10 +682,15 @@ struct HabitDetailView: View {
         }
         .navigationTitle(habit.title)
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: habit.currentValue) { _, newValue in
+            if newValue >= habit.targetValue && !habit.isCompleted{
+                habit.isCompleted = true
+            }
+        }
     }
 }
 
-// MARK: - Hero
+// MARK: - Hero Card
 
 struct HabitHeroCard: View {
     let title: String
@@ -582,7 +756,7 @@ struct HabitHeroCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
-// MARK: - Rank
+// MARK: - Rank Card
 
 struct RankCard: View {
     let rank: String?
@@ -623,7 +797,7 @@ struct RankCard: View {
 }
 
 
-// MARK: - Progress
+// MARK: - Progress Card
 
 struct ProgressSectionCard: View {
     let enteredValue: Int
@@ -662,7 +836,7 @@ struct ProgressSectionCard: View {
     }
 }
 
-// MARK: - Input
+// MARK: - Input Card
 
 struct InputSectionCard: View {
     @Binding var value: Int
@@ -690,13 +864,17 @@ struct InputSectionCard: View {
                         .foregroundStyle(.secondary)
                 }
             }
-
+/*
             Stepper(value: $value, in: 0...max(targetValue * 3, 10), step: 1) {
                 Text("Wert anpassen: \(value) \(unit)")
                     .font(.subheadline)
-            }
+
+            }*/
 
             HStack(spacing: 10) {
+                QuickAddButton(title: "0") {
+                    value = 0
+                }
                 QuickAddButton(title: "+1") {
                     value += 1
                 }
@@ -763,6 +941,6 @@ struct ActionSectionCard: View {
 
 #Preview {
     TodayView()
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
 }
 
