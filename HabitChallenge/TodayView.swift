@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TodayView: View {
     @State private var habits: [HabitItem] = HabitItem.sampleData
+    @State private var showingAddHabitSheet = false
 
     var body: some View {
         NavigationStack {
@@ -57,11 +58,14 @@ struct TodayView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        // später: neues Habit anlegen
+                        showingAddHabitSheet = true
                     } label: {
                         Image(systemName: "plus")
                     }
                 }
+            }
+            .sheet(isPresented: $showingAddHabitSheet) {
+                AddHabitView(habits: $habits)
             }
         }
     }
@@ -70,7 +74,7 @@ struct TodayView: View {
 // MARK: - Model
 
 struct HabitItem: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID = UUID()
     let title: String
     let icon: String
     let tint: Color
@@ -126,6 +130,68 @@ struct HabitItem: Identifiable, Hashable {
         )
     ]
 }
+    
+// MARK: - AddHabitView
+
+struct AddHabitView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var habits: [HabitItem]
+    
+    @State private var title = ""
+    @State private var icon = "star.fill"
+    @State private var targetValue = 1
+    @State private var unit = "Mal"
+    @State private var selectedColor: Color = .blue
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Neues Habit") {
+                    TextField("Titel", text: $title)
+                    TextField("Einheit", text: $unit)
+                    TextField("Zielwert", value: $targetValue, format: .number)
+                        .keyboardType(.numberPad)
+                }
+                
+                Section("Darstellung") {
+                    TextField("SF Symbol", text: $icon)
+                    
+                    ColorPicker("Farbe", selection: $selectedColor)
+                }
+            }
+            .navigationTitle("Neues Habit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Abbrechen") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Speichern") {
+                        let newHabit = HabitItem(
+                            title: title,
+                            icon: icon,
+                            tint: selectedColor,
+                            currentValue: 0,
+                            targetValue: max(targetValue, 1),
+                            unit: unit.isEmpty ? "Mal" : unit,
+                            rank: nil,
+                            eventSummary: nil,
+                            hasActiveCard: false,
+                            isCompleted: false
+                        )
+                        
+                        habits.append(newHabit)
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+}
 
 // MARK: - Components
 
@@ -143,7 +209,7 @@ struct TodaySummaryCard: View {
                 SummaryChip(
                     title: "Erledigt",
                     value: "\(completedCount)/\(totalCount)",
-                    color: .blue
+                    color: .green
                 )
 
                 SummaryChip(
@@ -172,7 +238,7 @@ struct SummaryChip: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
 
             Text(value)
                 .font(.title2)
@@ -181,7 +247,7 @@ struct SummaryChip: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(color.opacity(0.10))
+        .background(color.opacity(0.50))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
