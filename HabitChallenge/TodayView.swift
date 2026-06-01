@@ -662,6 +662,8 @@ struct HabitDetailView: View {
                         title: habit.title,
                         icon: habit.icon,
                         tint: habit.tint,
+                        frequency: habit.frequency,
+                        type: habit.type,
                         rank: habit.rank,
                         eventSummary: habit.eventSummary,
                         isCompleted: habit.isCompleted
@@ -673,24 +675,20 @@ struct HabitDetailView: View {
                         tint: habit.tint
                     )
 
-                    ProgressSectionCard(
-                        enteredValue: habit.currentValue,
-                        targetValue: habit.targetValue,
-                        unit: habit.unit,
-                        progress: progress,
-                        tint: habit.tint
-                    )
-
-                    InputSectionCard(
-                        value: $habit.currentValue,
-                        targetValue: habit.targetValue,
-                        unit: habit.unit
-                    )
-
-                    ActionSectionCard(
-                        isCompleted: $habit.isCompleted,
-                        tint: habit.tint
-                    )
+                    if habit.type == .measurable {
+                        MeasurableHabitCard(
+                            value: $habit.currentValue,
+                            targetValue: habit.targetValue,
+                            unit: habit.unit,
+                            tint: habit.tint
+                        )
+                    } else {
+                        BinaryHabitCard(
+                            isCompleted: $habit.isCompleted,
+                            currentValue: $habit.currentValue,
+                            tint: habit.tint
+                        )
+                    }
                 }
                 .padding()
                 .padding(.bottom, 24)
@@ -699,8 +697,17 @@ struct HabitDetailView: View {
         .navigationTitle(habit.title)
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: habit.currentValue) { _, newValue in
-            if newValue >= habit.targetValue && !habit.isCompleted{
-                habit.isCompleted = true
+            if habit.currentValue < 0 {
+                habit.currentValue = 0
+            }
+
+            if habit.type == .measurable {
+                habit.isCompleted = habit.currentValue >= habit.targetValue
+            }
+        }
+        .onChange(of: habit.isCompleted) { _, newValue in
+            if habit.type == .binary {
+                habit.currentValue = newValue ? 1 : 0
             }
         }
     }
@@ -712,6 +719,8 @@ struct HabitHeroCard: View {
     let title: String
     let icon: String
     let tint: Color
+    let frequency: HabitFrequency
+    let type: HabitType
     let rank: String?
     let eventSummary: String?
     let isCompleted: Bool
@@ -732,6 +741,10 @@ struct HabitHeroCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.title2.bold())
+                    
+                    Text("\(frequency.title) · \(type == .binary ? "Einfach abhaken" : "Mit Zielwert")")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
                     //if let rank {
                         //Text(rank)
@@ -812,24 +825,27 @@ struct RankCard: View {
     }
 }
 
+// MARK: - MeasurableHabitCard
 
-// MARK: - Progress Card
-
-struct ProgressSectionCard: View {
-    let enteredValue: Int
+struct MeasurableHabitCard: View {
+    @Binding var value: Int
     let targetValue: Int
     let unit: String
-    let progress: Double
     let tint: Color
 
+    private var progress: Double {
+        guard targetValue > 0 else { return 0 }
+        return min(Double(value) / Double(targetValue), 1.0)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Heutiger Fortschritt")
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Fortschritt")
                 .font(.title2)
                 .bold()
 
-            HStack(alignment: .lastTextBaseline) {
-                Text("\(enteredValue)")
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                Text("\(value)")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
 
                 Text("/ \(targetValue) \(unit)")
@@ -842,66 +858,25 @@ struct ProgressSectionCard: View {
             ProgressView(value: progress)
                 .tint(tint)
 
-            Text(progress >= 1 ? "Tagesziel erreicht." : "Noch \(max(targetValue - enteredValue, 0)) \(unit) bis zum Ziel.")
+            Text(progress >= 1 ? "Ziel erreicht." : "Noch \(max(targetValue - value, 0)) \(unit) bis zum Ziel.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-        }
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
-}
 
-// MARK: - Input Card
+            HStack(spacing: 12) {
+                TextField("0", value: $value, format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
 
-struct InputSectionCard: View {
-    @Binding var value: Int
-    let targetValue: Int
-    let unit: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Eintragen")
-                .font(.title2)
-                .bold()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Heute geschafft")
+                Text(unit)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-
-                HStack(spacing: 12) {
-                    TextField("0", value: $value, format: .number)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text(unit)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
             }
-/*
-            Stepper(value: $value, in: 0...max(targetValue * 3, 10), step: 1) {
-                Text("Wert anpassen: \(value) \(unit)")
-                    .font(.subheadline)
-
-            }*/
 
             HStack(spacing: 10) {
-                QuickAddButton(title: "0") {
-                    value = 0
-                }
-                QuickAddButton(title: "+1") {
-                    value += 1
-                }
-
-                QuickAddButton(title: "+5") {
-                    value += 5
-                }
-
-                QuickAddButton(title: "Ziel") {
-                    value = targetValue
-                }
+                QuickAddButton(title: "0") { value = 0 }
+                QuickAddButton(title: "+1") { value += 1 }
+                QuickAddButton(title: "+5") { value += 5 }
+                QuickAddButton(title: "Ziel") { value = targetValue }
             }
         }
         .padding()
@@ -927,23 +902,51 @@ struct QuickAddButton: View {
     }
 }
 
-// MARK: - Actions
+// MARK: - BinaryHabitCard
 
-struct ActionSectionCard: View {
+struct BinaryHabitCard: View {
     @Binding var isCompleted: Bool
+    @Binding var currentValue: Int
     let tint: Color
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Status")
+                .font(.title2)
+                .bold()
+
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill((isCompleted ? Color.green : Color.red).opacity(0.15))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isCompleted ? .green : Color.red)
+                        .font(.title3)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isCompleted ? "Bereits erledigt" : "Noch offen")
+                        .font(.headline)
+
+                    Text("Für diesen Zeitraum einfach abhaken.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
 
             Button {
                 isCompleted.toggle()
+                currentValue = isCompleted ? 1 : 0
             } label: {
-                Text(isCompleted ? "Erledigt-Markierung entfernen" : "Als erledigt markieren")
+                Text(isCompleted ? "Als nicht erledigt markieren" : "Als erledigt markieren")
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color(.tertiarySystemGroupedBackground))
+                    .background(tint.opacity(0.14))
                     .foregroundStyle(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
