@@ -18,6 +18,7 @@
 		FFB8ECEF2FD088D400E42F7A /* HabitType.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECEE2FD088D400E42F7A /* HabitType.swift */; };
 		FFB8ECF12FD0897500E42F7A /* AddHabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF02FD0897500E42F7A /* AddHabitView.swift */; };
 		FFB8ECF32FD08A1B00E42F7A /* HabitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF22FD08A1B00E42F7A /* HabitDetailView.swift */; };
+		FFB8ECF52FD08F3900E42F7A /* EditHabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF42FD08F3900E42F7A /* EditHabitView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		FFB8ECEE2FD088D400E42F7A /* HabitType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitType.swift; sourceTree = "<group>"; };
 		FFB8ECF02FD0897500E42F7A /* AddHabitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddHabitView.swift; sourceTree = "<group>"; };
 		FFB8ECF22FD08A1B00E42F7A /* HabitDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitDetailView.swift; sourceTree = "<group>"; };
+		FFB8ECF42FD08F3900E42F7A /* EditHabitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditHabitView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +108,7 @@
 				FFB2C8442FB254EC004CC593 /* MainView.swift */,
 				FFB8ECF02FD0897500E42F7A /* AddHabitView.swift */,
 				FFB8ECF22FD08A1B00E42F7A /* HabitDetailView.swift */,
+				FFB8ECF42FD08F3900E42F7A /* EditHabitView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -193,6 +196,7 @@
 				FF5A2B2B2FCF49CC0065B708 /* HabitStore.swift in Sources */,
 				FFB8ECF12FD0897500E42F7A /* AddHabitView.swift in Sources */,
 				FFB8ECF32FD08A1B00E42F7A /* HabitDetailView.swift in Sources */,
+				FFB8ECF52FD08F3900E42F7A /* EditHabitView.swift in Sources */,
 				FF5A2B292FCF46AE0065B708 /* ColorExtension.swift in Sources */,
 				FFB8ECEB2FD0856100E42F7A /* HabitItem.swift in Sources */,
 				FFB8ECEF2FD088D400E42F7A /* HabitType.swift in Sources */,

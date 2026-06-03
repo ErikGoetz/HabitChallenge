@@ -13,6 +13,7 @@ import SwiftUI
 
 struct HabitDetailView: View {
     @Binding var habit: HabitItem
+    @State private var showingEditSheet = false
 
     var progress: Double {
         guard habit.targetValue > 0 else { return 0 }
@@ -64,7 +65,19 @@ struct HabitDetailView: View {
         }
         .navigationTitle(habit.title)
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: habit.currentValue) { _, newValue in
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingEditSheet = true
+                } label: {
+                    Label("Bearbeiten", systemImage: "pencil")
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            EditHabitView(habit: $habit)
+        }
+        .onChange(of: habit.currentValue) { _, _ in
             if habit.currentValue < 0 {
                 habit.currentValue = 0
             }
@@ -80,7 +93,6 @@ struct HabitDetailView: View {
         }
     }
 }
-
 // MARK: - Hero Card
 
 struct HabitHeroCard: View {

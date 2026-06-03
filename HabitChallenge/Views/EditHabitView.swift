@@ -1,0 +1,156 @@
+//
+//  EditHabitView.swift
+//  HabitChallenge
+//
+//  Created by Erik Götz on 03.06.26.
+//
+//  struct for editing Habits in detailview
+
+import SwiftUI
+
+struct EditHabitView: View {
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 6)
+
+    private let habitSymbols = [
+        "book.fill", "bookmark.fill", "pencil", "brain.head.profile", "laptopcomputer", "keyboard",
+        "figure.walk", "figure.run", "figure.strengthtraining.traditional", "bicycle", "dumbbell.fill", "sportscourt.fill",
+        "heart.fill", "bed.double.fill", "moon.fill", "alarm.fill", "drop.fill", "pills.fill",
+        "fork.knife", "carrot.fill", "xmark.circle", "takeoutbag.and.cup.and.straw.fill", "waterbottle.fill", "leaf.fill",
+        "person.2.fill", "message.fill", "phone.fill", "music.note", "gamecontroller.fill", "star.fill"
+    ]
+
+    @Environment(\.dismiss) private var dismiss
+    @Binding var habit: HabitItem
+
+    @State private var title: String
+    @State private var icon: String
+    @State private var targetValue: Int?
+    @State private var unit: String
+    @State private var selectedColor: Color
+    @State private var selectedType: HabitType
+    @State private var selectedFrequency: HabitFrequency
+
+    init(habit: Binding<HabitItem>) {
+        _habit = habit
+        _title = State(initialValue: habit.wrappedValue.title)
+        _icon = State(initialValue: habit.wrappedValue.icon)
+        _targetValue = State(initialValue: habit.wrappedValue.targetValue)
+        _unit = State(initialValue: habit.wrappedValue.unit)
+        _selectedColor = State(initialValue: habit.wrappedValue.tintColor)
+        _selectedType = State(initialValue: habit.wrappedValue.type)
+        _selectedFrequency = State(initialValue: habit.wrappedValue.frequency)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Habit bearbeiten") {
+                    TextField("Titel", text: $title)
+                        .textInputAutocapitalization(.never)
+
+                    Picker("Frequenz", selection: $selectedFrequency) {
+                        ForEach(HabitFrequency.allCases) { frequency in
+                            Text(frequency.title).tag(frequency)
+                        }
+                    }
+                }
+
+                Section("Habittyp") {
+                    HabitTypePreviewCard(
+                        title: "Mit Zielwert",
+                        subtitle: "Für Gewohnheiten mit Menge, Dauer oder Anzahl.",
+                        previewText: "10 Seiten / 30 min / 5 km",
+                        icon: "chart.bar.fill",
+                        isSelected: selectedType == .measurable,
+                        tint: selectedColor
+                    ) {
+                        selectedType = .measurable
+                    }
+
+                    HabitTypePreviewCard(
+                        title: "Einfach abhaken",
+                        subtitle: "Für Gewohnheiten, die du nur als erledigt markierst.",
+                        previewText: "Heute erledigt?",
+                        icon: "checkmark.circle",
+                        isSelected: selectedType == .binary,
+                        tint: selectedColor
+                    ) {
+                        selectedType = .binary
+                    }
+                }
+
+                if selectedType == .measurable {
+                    Section("Einheit & Zielwert") {
+                        TextField("Einheit", text: $unit)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        TextField("Zielwert", value: $targetValue, format: .number)
+                            .keyboardType(.numberPad)
+                    }
+                }
+
+                Section("Symbol") {
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(habitSymbols, id: \.self) { symbol in
+                            Button {
+                                icon = symbol
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(icon == symbol ? selectedColor.opacity(0.18) : Color(.tertiarySystemGroupedBackground))
+
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(icon == symbol ? selectedColor : .clear, lineWidth: 1.5)
+
+                                    Image(systemName: symbol)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(icon == symbol ? selectedColor : .primary)
+                                }
+                                .frame(height: 42)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Section("Farbe") {
+                    ColorPicker("Farbe", selection: $selectedColor)
+                }
+            }
+            .navigationTitle("Habit bearbeiten")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Abbrechen") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Speichern") {
+                        habit.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        habit.icon = icon.isEmpty ? "star.fill" : icon
+                        habit.tintHex = selectedColor.hexString
+                        habit.type = selectedType
+                        habit.frequency = selectedFrequency
+
+                        if selectedType == .binary {
+                            habit.targetValue = 1
+                            habit.unit = "Erledigt"
+                            habit.currentValue = habit.isCompleted ? 1 : 0
+                        } else {
+                            habit.targetValue = max(targetValue ?? 1, 1)
+                            habit.unit = unit.isEmpty ? "Mal" : unit
+                            habit.isCompleted = habit.currentValue >= habit.targetValue
+                        }
+
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+}
