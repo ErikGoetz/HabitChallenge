@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct TodayView: View {
+struct MainView: View {
     @StateObject private var store = HabitStore()
     @State private var showingAddHabitSheet = false
     @State private var navigationPath = NavigationPath()
@@ -1031,7 +1031,7 @@ struct EmptyHabitCard: View {
 }
 
 #Preview {
-    TodayView()
+    MainView()
         .preferredColorScheme(.dark)
 }
 
