@@ -11,6 +11,7 @@ import SwiftUI
 struct TodayView: View {
     @StateObject private var store = HabitStore()
     @State private var showingAddHabitSheet = false
+    @State private var navigationPath = NavigationPath()
 
     private var dailyHabitIndices: [Int] {
         store.habits.indices.filter { store.habits[$0].frequency == .daily }
@@ -33,45 +34,47 @@ struct TodayView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(.systemGroupedBackground)
-                    .ignoresSafeArea()
+        NavigationStack(path: $navigationPath) {
+            List {
+                Section {
+                    TodaySummaryCard(
+                        completedDailyCount: completedDailyCount,
+                        totalDailyCount: dailyHabitIndices.count,
+                        completedWeeklyCount: completedWeeklyCount,
+                        totalWeeklyCount: weeklyHabitIndices.count,
+                        newEventsCount: newEventsCount
+                    )
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        TodaySummaryCard(
-                            completedDailyCount: completedDailyCount,
-                            totalDailyCount: dailyHabitIndices.count,
-                            completedWeeklyCount: completedWeeklyCount,
-                            totalWeeklyCount: weeklyHabitIndices.count,
-                            newEventsCount: newEventsCount
+                    if newEventsCount > 0 {
+                        ChallengeEventBanner(
+                            text: "Heute gibt es neue Challenge-Ereignisse in deinen Habits."
                         )
-                        .padding(.horizontal)
-
-                        if newEventsCount > 0 {
-                            ChallengeEventBanner(
-                                text: "Heute gibt es neue Challenge-Ereignisse in deinen Habits."
-                            )
-                            .padding(.horizontal)
-                        }
-
-                        HabitSection(
-                            title: "Daily Habits",
-                            indices: dailyHabitIndices,
-                            habits: $store.habits
-                        )
-
-                        HabitSection(
-                            title: "Weekly Habits",
-                            indices: weeklyHabitIndices,
-                            habits: $store.habits
-                        )
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
                 }
+
+                HabitListSection(
+                    title: "Daily Habits",
+                    indices: dailyHabitIndices,
+                    habits: $store.habits,
+                    navigationPath: $navigationPath
+                )
+
+                HabitListSection(
+                    title: "Weekly Habits",
+                    indices: weeklyHabitIndices,
+                    habits: $store.habits,
+                    navigationPath: $navigationPath
+                )
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Habit-Übersicht")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -84,6 +87,13 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showingAddHabitSheet) {
                 AddHabitView(habits: $store.habits)
+            }
+            .navigationDestination(for: UUID.self) { habitID in
+                if let index = store.habits.firstIndex(where: { $0.id == habitID }) {
+                    HabitDetailView(habit: $store.habits[index])
+                } else {
+                    Text("Habit nicht gefunden")
+                }
             }
         }
     }
@@ -442,75 +452,6 @@ struct HabitTypePreviewCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - HabitSection
-
-struct HabitSection: View {
-    let title: String
-    let indices: [Int]
-    @Binding var habits: [HabitItem]
-
-    @State private var pendingDeleteIndex: Int?
-
-    private func deleteHabit(at index: Int) {
-        guard habits.indices.contains(index) else { return }
-        habits.remove(at: index)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.title2.bold())
-                .padding(.horizontal)
-                .foregroundStyle(.primary)
-
-            if indices.isEmpty {
-                Text("Noch keine Habits in diesem Bereich.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-            } else {
-                ForEach(indices, id: \.self) { index in
-                    NavigationLink {
-                        HabitDetailView(habit: $habits[index])
-                    } label: {
-                        HabitCardView(habit: habits[index])
-                    }
-                    .buttonStyle(.plain)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            pendingDeleteIndex = index
-                        } label: {
-                            Label("Löschen", systemImage: "trash")
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-            }
-        }
-        .confirmationDialog(
-            "Habit löschen?",
-            isPresented: Binding(
-                get: { pendingDeleteIndex != nil },
-                set: { if !$0 { pendingDeleteIndex = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Löschen", role: .destructive) {
-                if let index = pendingDeleteIndex {
-                    deleteHabit(at: index)
-                }
-                pendingDeleteIndex = nil
-            }
-
-            Button("Abbrechen", role: .cancel) {
-                pendingDeleteIndex = nil
-            }
-        } message: {
-            Text("Dieses Habit wird dauerhaft entfernt.")
-        }
     }
 }
 
@@ -999,6 +940,93 @@ struct BinaryHabitCard: View {
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+// MARK: - HabitListSection
+
+struct HabitListSection: View {
+    let title: String
+    let indices: [Int]
+    @Binding var habits: [HabitItem]
+    @Binding var navigationPath: NavigationPath
+
+    private func deleteHabit(at index: Int) {
+        guard habits.indices.contains(index) else { return }
+        habits.remove(at: index)
+    }
+
+    var body: some View {
+        Section(title) {
+            if indices.isEmpty {
+                EmptyHabitCard(
+                    title: "Noch keine Habits",
+                    subtitle: title == "Daily Habits"
+                        ? "Lege ein tägliches Habit an, um hier zu starten."
+                        : "Lege ein wöchentliches Habit an, um hier zu starten."
+                )
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            } else {
+                ForEach(indices, id: \.self) { index in
+                    Button {
+                        navigationPath.append(habits[index].id)
+                    } label: {
+                        HabitCardView(habit: habits[index])
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            deleteHabit(at: index)
+                        } label: {
+                            Label("Löschen", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .font(.subheadline)
+        .foregroundStyle(.primary)
+    }
+}
+
+struct EmptyHabitCard: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.gray.opacity(0.12))
+                        .frame(width: 42, height: 42)
+
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title3)
+                        .bold()
+
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(.horizontal, 4)
     }
 }
 

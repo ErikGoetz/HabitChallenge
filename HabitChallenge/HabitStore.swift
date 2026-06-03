@@ -13,7 +13,7 @@ final class HabitStore: ObservableObject {
     private let storageKey = "saved_habits"
 
     init() {
-        UserDefaults.standard.removeObject(forKey: storageKey)
+        //UserDefaults.standard.removeObject(forKey: storageKey)
         loadHabits()
     }
 
