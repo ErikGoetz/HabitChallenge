@@ -1,5 +1,6 @@
 //
 //  HabitChallenge
+//  Main function with the main views and logics
 //
 //  Created by Erik Götz on 11.05.26.
 //
@@ -8,27 +9,27 @@
 import SwiftUI
 
 struct TodayView: View {
-    @State private var habits: [HabitItem] = HabitItem.sampleData
+    @StateObject private var store = HabitStore()
     @State private var showingAddHabitSheet = false
 
     private var dailyHabitIndices: [Int] {
-        habits.indices.filter { habits[$0].frequency == .daily }
+        store.habits.indices.filter { store.habits[$0].frequency == .daily }
     }
 
     private var weeklyHabitIndices: [Int] {
-        habits.indices.filter { habits[$0].frequency == .weekly }
+        store.habits.indices.filter { store.habits[$0].frequency == .weekly }
     }
 
     private var completedDailyCount: Int {
-        dailyHabitIndices.filter { habits[$0].isCompleted }.count
+        dailyHabitIndices.filter { store.habits[$0].isCompleted }.count
     }
 
     private var completedWeeklyCount: Int {
-        weeklyHabitIndices.filter { habits[$0].isCompleted }.count
+        weeklyHabitIndices.filter { store.habits[$0].isCompleted }.count
     }
 
     private var newEventsCount: Int {
-        habits.filter { $0.eventSummary != nil }.count
+        store.habits.filter { $0.eventSummary != nil }.count
     }
 
     var body: some View {
@@ -58,17 +59,17 @@ struct TodayView: View {
                         HabitSection(
                             title: "Daily Habits",
                             indices: dailyHabitIndices,
-                            habits: $habits
+                            habits: $store.habits
                         )
 
                         HabitSection(
                             title: "Weekly Habits",
                             indices: weeklyHabitIndices,
-                            habits: $habits
+                            habits: $store.habits
                         )
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
                 }
             }
             .navigationTitle("Habit-Übersicht")
@@ -82,7 +83,7 @@ struct TodayView: View {
                 }
             }
             .sheet(isPresented: $showingAddHabitSheet) {
-                AddHabitView(habits: $habits)
+                AddHabitView(habits: $store.habits)
             }
         }
     }
@@ -90,7 +91,7 @@ struct TodayView: View {
 
 // MARK: - ENUMs
 
-enum HabitType: String, CaseIterable, Identifiable {
+enum HabitType: String, CaseIterable, Identifiable, Codable {
     case binary
     case measurable
 
@@ -106,7 +107,7 @@ enum HabitType: String, CaseIterable, Identifiable {
     }
 }
 
-enum HabitFrequency: String, CaseIterable, Identifiable {
+enum HabitFrequency: String, CaseIterable, Identifiable, Codable {
     case daily
     case weekly
 
@@ -124,31 +125,36 @@ enum HabitFrequency: String, CaseIterable, Identifiable {
 
 // MARK: - Model
 
-struct HabitItem: Identifiable, Hashable {
-    let id: UUID = UUID()
-        var title: String
-        var icon: String
-        var tint: Color
-        var type: HabitType
-        var frequency: HabitFrequency
-        var currentValue: Int
-        var targetValue: Int
-        var unit: String
-        var rank: String?
-        var eventSummary: String?
-        var hasActiveCard: Bool
-        var isCompleted: Bool
+struct HabitItem: Identifiable, Hashable, Codable {
+    let id: UUID
+    var title: String
+    var icon: String
+    var tintHex: String
+    var type: HabitType
+    var frequency: HabitFrequency
+    var currentValue: Int
+    var targetValue: Int
+    var unit: String
+    var rank: String?
+    var eventSummary: String?
+    var hasActiveCard: Bool
+    var isCompleted: Bool
 
     var progress: Double {
         guard targetValue > 0 else { return 0 }
         return min(Double(currentValue) / Double(targetValue), 1.0)
     }
 
+    var tintColor: Color {
+        Color(hex: tintHex) ?? .blue
+    }
+
     static let sampleData: [HabitItem] = [
         HabitItem(
+            id: UUID(),
             title: "Lesechallenge",
             icon: "book.fill",
-            tint: .blue,
+            tintHex: Color.blue.hexString,
             type: .measurable,
             frequency: .daily,
             currentValue: 0,
@@ -160,9 +166,10 @@ struct HabitItem: Identifiable, Hashable {
             isCompleted: false
         ),
         HabitItem(
+            id: UUID(),
             title: "Workout",
             icon: "figure.strengthtraining.traditional",
-            tint: .green,
+            tintHex: Color.green.hexString,
             type: .binary,
             frequency: .daily,
             currentValue: 0,
@@ -174,9 +181,10 @@ struct HabitItem: Identifiable, Hashable {
             isCompleted: false
         ),
         HabitItem(
+            id: UUID(),
             title: "Lernen",
             icon: "brain.head.profile",
-            tint: .purple,
+            tintHex: Color.purple.hexString,
             type: .measurable,
             frequency: .daily,
             currentValue: 0,
@@ -256,7 +264,7 @@ struct AddHabitView: View {
                     }
                 }
                 
-                Section("Habittyp verstehen") {
+                Section("Habittyp") {
                     HabitTypePreviewCard(
                         title: "Mit Zielwert",
                         subtitle: "Für Gewohnheiten mit Menge, Dauer oder Anzahl.",
@@ -359,9 +367,10 @@ struct AddHabitView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Speichern") {
                         let newHabit = HabitItem(
+                            id: UUID(),
                             title: title,
                             icon: icon.isEmpty ? "star.fill" : icon,
-                            tint: selectedColor,
+                            tintHex: selectedColor.hexString,
                             type: selectedType,
                             frequency: selectedFrequency,
                             currentValue: 0,
@@ -372,7 +381,7 @@ struct AddHabitView: View {
                             hasActiveCard: false,
                             isCompleted: false
                         )
-                        
+
                         habits.append(newHabit)
                         dismiss()
                     }
@@ -443,6 +452,13 @@ struct HabitSection: View {
     let indices: [Int]
     @Binding var habits: [HabitItem]
 
+    @State private var pendingDeleteIndex: Int?
+
+    private func deleteHabit(at index: Int) {
+        guard habits.indices.contains(index) else { return }
+        habits.remove(at: index)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
@@ -463,9 +479,37 @@ struct HabitSection: View {
                         HabitCardView(habit: habits[index])
                     }
                     .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            pendingDeleteIndex = index
+                        } label: {
+                            Label("Löschen", systemImage: "trash")
+                        }
+                    }
                     .padding(.horizontal)
                 }
             }
+        }
+        .confirmationDialog(
+            "Habit löschen?",
+            isPresented: Binding(
+                get: { pendingDeleteIndex != nil },
+                set: { if !$0 { pendingDeleteIndex = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Löschen", role: .destructive) {
+                if let index = pendingDeleteIndex {
+                    deleteHabit(at: index)
+                }
+                pendingDeleteIndex = nil
+            }
+
+            Button("Abbrechen", role: .cancel) {
+                pendingDeleteIndex = nil
+            }
+        } message: {
+            Text("Dieses Habit wird dauerhaft entfernt.")
         }
     }
 }
@@ -561,11 +605,11 @@ struct HabitCardView: View {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(habit.tint.opacity(0.15))
+                        .fill(habit.tintColor.opacity(0.15))
                         .frame(width: 42, height: 42)
 
                     Image(systemName: habit.icon)
-                        .foregroundStyle(habit.tint)
+                        .foregroundStyle(habit.tintColor)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -614,7 +658,7 @@ struct HabitCardView: View {
             }
 
             ProgressView(value: habit.progress)
-                .tint(habit.tint)
+                .tint(habit.tintColor)
 
             if let eventSummary = habit.eventSummary {
                 Label(eventSummary, systemImage: "sparkles")
@@ -661,7 +705,7 @@ struct HabitDetailView: View {
                     HabitHeroCard(
                         title: habit.title,
                         icon: habit.icon,
-                        tint: habit.tint,
+                        tint: habit.tintColor,
                         frequency: habit.frequency,
                         type: habit.type,
                         rank: habit.rank,
@@ -672,7 +716,7 @@ struct HabitDetailView: View {
                     RankCard(
                         rank: habit.rank,
                         points: 400,
-                        tint: habit.tint
+                        tint: habit.tintColor
                     )
 
                     if habit.type == .measurable {
@@ -680,13 +724,13 @@ struct HabitDetailView: View {
                             value: $habit.currentValue,
                             targetValue: habit.targetValue,
                             unit: habit.unit,
-                            tint: habit.tint
+                            tint: habit.tintColor
                         )
                     } else {
                         BinaryHabitCard(
                             isCompleted: $habit.isCompleted,
                             currentValue: $habit.currentValue,
-                            tint: habit.tint
+                            tint: habit.tintColor
                         )
                     }
                 }
