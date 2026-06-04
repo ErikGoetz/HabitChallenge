@@ -12,6 +12,7 @@ struct MainView: View {
     @StateObject private var store = HabitStore()
     @State private var showingAddHabitSheet = false
     @State private var navigationPath = NavigationPath()
+    @Environment(\.scenePhase) private var scenePhase
 
     private var dailyHabitIndices: [Int] {
         store.habits.indices.filter { store.habits[$0].frequency == .daily }
@@ -47,8 +48,10 @@ struct MainView: View {
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 4, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                }
 
-                    if newEventsCount > 0 {
+                if newEventsCount > 0 {
+                    Section {
                         ChallengeEventBanner(
                             text: "Heute gibt es neue Challenge-Ereignisse in deinen Habits."
                         )
@@ -93,6 +96,14 @@ struct MainView: View {
                     HabitDetailView(habit: $store.habits[index])
                 } else {
                     Text("Habit nicht gefunden")
+                }
+            }
+            .onAppear {
+                store.resetHabitsIfNeeded()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    store.resetHabitsIfNeeded()
                 }
             }
         }
