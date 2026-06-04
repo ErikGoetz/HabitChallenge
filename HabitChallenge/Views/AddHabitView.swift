@@ -6,7 +6,6 @@
 //
 //  Sheet for adding new Habits to Overview. Includes Preview card
 
-import Foundation
 import SwiftUI
 
 // MARK: - AddHabitView
@@ -64,107 +63,111 @@ struct AddHabitView: View {
     
     var body: some View {
         NavigationStack {
-            Form{
-                Section("Neues Habit") {
-                    TextField("Titel", text: $title)
-                        .textInputAutocapitalization(.never)
-                    Picker("Frequenz", selection: $selectedFrequency) {
-                        ForEach(HabitFrequency.allCases) { frequency in
-                            Text(frequency.title).tag(frequency)
-                        }
-                    }
-                }
-                
-                Section("Habittyp") {
-                    HabitTypePreviewCard(
-                        title: "Mit Zielwert",
-                        subtitle: "Für Gewohnheiten mit Menge, Dauer oder Anzahl.",
-                        previewText: "10 Seiten / 30 min / 5 km",
-                        icon: "chart.bar.fill",
-                        isSelected: selectedType == .measurable,
-                        tint: selectedColor,
-                        action: {
-                            selectedType = .measurable
-                        }
-                    )
-                    
-                    HabitTypePreviewCard(
-                        title: "Einfach abhaken",
-                        subtitle: "Für Gewohnheiten, die du nur als erledigt markierst.",
-                        previewText: "Heute erledigt?",
-                        icon: "checkmark.circle",
-                        isSelected: selectedType == .binary,
-                        tint: selectedColor,
-                        action: {
-                            selectedType = .binary
-                        }
-                    )
-                }
-                
-                if selectedType == .measurable{
-                    Section("Einheit & Zielwert"){
+            ZStack {
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
 
-                        TextField("Einheit", text: $unit)
+                Form {
+                    Section("Neues Habit") {
+                        TextField("Titel", text: $title)
                             .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
 
-                        TextField("Zielwert", value: $targetValue, format: .number)
-                                .keyboardType(.numberPad)
-                    }
-                }
-                
-                
-                Section("Symbol") {
-                    LazyVGrid(columns: columns, spacing: 8) {
-                        ForEach(habitSymbols, id: \.self) { symbol in
-                            Button {
-                                icon = symbol
-                            } label: {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(icon == symbol ? selectedColor.opacity(0.18) : Color(.tertiarySystemGroupedBackground))
-
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(icon == symbol ? selectedColor : Color.clear, lineWidth: 1.5)
-
-                                    Image(systemName: symbol)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundStyle(icon == symbol ? selectedColor : .primary)
-                                }
-                                .frame(height: 42)
+                        Picker("Frequenz", selection: $selectedFrequency) {
+                            ForEach(HabitFrequency.allCases) { frequency in
+                                Text(frequency.title).tag(frequency)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.vertical, 4)
-                }
 
-                Section("Farbe") {
-                    ColorPicker("Farbe", selection: $selectedColor)
-                }
-                Section("Vorschau") {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(selectedColor.opacity(0.15))
-                                .frame(width: 42, height: 42)
+                    Section("Habittyp") {
+                        HabitTypePreviewCard(
+                            title: "Mit Zielwert",
+                            subtitle: "Für Gewohnheiten mit Menge, Dauer oder Anzahl.",
+                            previewText: "10 Seiten / 30 min / 5 km",
+                            icon: "chart.bar.fill",
+                            isSelected: selectedType == .measurable,
+                            tint: selectedColor,
+                            action: {
+                                selectedType = .measurable
+                            }
+                        )
 
-                            Image(systemName: icon)
-                                .foregroundStyle(selectedColor)
-                        }
+                        HabitTypePreviewCard(
+                            title: "Einfach abhaken",
+                            subtitle: "Für Gewohnheiten, die du nur als erledigt markierst.",
+                            previewText: "Heute erledigt?",
+                            icon: "checkmark.circle",
+                            isSelected: selectedType == .binary,
+                            tint: selectedColor,
+                            action: {
+                                selectedType = .binary
+                            }
+                        )
+                    }
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(title.isEmpty ? "Neues Habit" : title)
-                                .font(.headline)
+                    if selectedType == .measurable {
+                        Section("Einheit & Zielwert") {
+                            TextField("Einheit", text: $unit)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
 
-                            Text("0 / \(max(targetValue ?? 1, 1)) \(unit.isEmpty ? "Mal" : unit)")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            TextField("Zielwert", value: $targetValue, format: .number)
+                                .keyboardType(.numberPad)
                         }
                     }
-                    .padding(.vertical, 4)
+
+                    Section("Symbol") {
+                        LazyVGrid(columns: columns, spacing: 8) {
+                            ForEach(habitSymbols, id: \.self) { symbol in
+                                Button {
+                                    icon = symbol
+                                } label: {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .fill(icon == symbol ? selectedColor.opacity(0.18) : Color(.tertiarySystemGroupedBackground))
+
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(icon == symbol ? selectedColor : Color.clear, lineWidth: 1.5)
+
+                                        Image(systemName: symbol)
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundStyle(icon == symbol ? selectedColor : .primary)
+                                    }
+                                    .frame(height: 42)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    Section("Farbe") {
+                        ColorPicker("Farbe", selection: $selectedColor)
+                    }
+
+                    Section("Vorschau") {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(selectedColor.opacity(0.15))
+                                    .frame(width: 42, height: 42)
+
+                                Image(systemName: icon)
+                                    .foregroundStyle(selectedColor)
+                            }
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(title.isEmpty ? "Neues Habit" : title)
+                                    .font(.headline)
+
+                                Text("0 / \(max(targetValue ?? 1, 1)) \(unit.isEmpty ? "Mal" : unit)")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
-                
             }
             .navigationTitle("Neues Habit")
             .navigationBarTitleDisplayMode(.inline)
@@ -174,7 +177,6 @@ struct AddHabitView: View {
                         dismiss()
                     }
                 }
-                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Speichern") {
                         let newHabit = HabitItem(

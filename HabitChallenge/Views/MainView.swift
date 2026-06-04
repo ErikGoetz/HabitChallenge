@@ -44,7 +44,7 @@ struct MainView: View {
                         totalWeeklyCount: weeklyHabitIndices.count,
                         newEventsCount: newEventsCount
                     )
-                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 4, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 4, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
@@ -52,7 +52,7 @@ struct MainView: View {
                         ChallengeEventBanner(
                             text: "Heute gibt es neue Challenge-Ereignisse in deinen Habits."
                         )
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                     }
