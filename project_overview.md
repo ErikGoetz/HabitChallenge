@@ -1,6 +1,6 @@
 # HabitChallenge – Projektzusammenfassung
 
-_Zuletzt aktualisiert: 04.06.2026_
+_Zuletzt aktualisiert: 27.06.2026_
 
 ---
 
