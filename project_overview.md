@@ -22,6 +22,7 @@ Mittelfristig soll sich die App zu einer vollständigen **Habit-Zentrale mit Cha
 
 - **Hauptscreen (`MainView`):** Übersicht über Daily- und Weekly-Habits, zusammenfassende Kennzahlen (erledigte Habits, neue Events), `ChallengeEventBanner`
 - **Habittypen:** `binary` (erledigt/nicht erledigt) und `measurable` (numerischer Fortschritt mit Zielwert)
+- **Habitfrequenzen:** `täglich` und `wöchentlich`
 - **Detailansicht (`HabitDetailView`):** Typ-spezifische Darstellung via `BinaryHabitCard` und `MeasurableHabitCard`, Fortschrittsanzeige, Quick-Add-Buttons, `HabitHeroCard`, `RankCard`
 - **Habit anlegen (`AddHabitView`):** Sheet mit Typauswahl, Icon, Farbe, Zielwert, Frequenz
 - **Habit bearbeiten (`EditHabitView`):** Edit-Button oben rechts in der Detailansicht, eigenes Sheet
@@ -99,7 +100,7 @@ Models, Store, Views und Extensions in eigene Dateien getrennt.
 ### ✅ Schritt 2 – Habit-Bearbeitung (ERLEDIGT)
 `EditHabitView` mit Edit-Button in der Detailansicht umgesetzt.
 
-### Schritt 3 – Automatischer Habit-Reset (NEU)
+### ✅ Schritt 3 – Automatischer Habit-Reset (NEU)
 `currentValue` muss frequenzabhängig automatisch zurückgesetzt werden:
 - **Daily-Habits** werden täglich um Mitternacht zurückgesetzt
 - **Weekly-Habits** werden wöchentlich (z. B. montags) zurückgesetzt
@@ -131,7 +132,6 @@ Bevor Challenges vollständig eingeführt werden, sollten diese Grundlagen solid
 
 | Feature | Grund |
 |---|---|
-| Automatischer Reset (Schritt 3) | Ohne Reset sind Tracking-Daten bedeutungslos |
 | Completion-Log / Tracking (Schritt 4) | Challenge-Fortschritt baut direkt darauf auf |
 | Habit-Sortierung / Reihenfolge ändern | Bessere UX im Hauptscreen bei wachsender Habit-Anzahl |
 | Habit archivieren / pausieren | Verhindert, dass abgeschlossene Challenges den Hauptscreen überladen |
@@ -144,14 +144,13 @@ Bevor Challenges vollständig eingeführt werden, sollten diese Grundlagen solid
 | Risiko | Beschreibung |
 |---|---|
 | UI-Komplexität | Wachsende Datenmenge erfordert klare Trennung von View-Logik und Store-Logik |
-| Form/NavigationStack im Sheet | iOS Dark-Mode-Verhalten schwer kontrollierbar |
+| Form/NavigationStack im Sheet | Sheet/Form-Verhalten schwer kontrollierbar |
 | Datenmigration | Neue Modellfelder (`lastResetDate`, `completionLog`) müssen rückwärtskompatibel ergänzt werden |
 
 ---
 
 ## Späteres Backlog
 
-- `TodayView` final zu `MainView` umbenennen
 - Gemeinsame Formularbausteine für `AddHabitView` und `EditHabitView` extrahieren
 - `Form` in Sheets ggf. durch `ScrollView`-basierte Lösung ersetzen
 - Widget-Unterstützung (WidgetKit) für Habit-Status auf dem Homescreen

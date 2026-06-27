@@ -81,12 +81,12 @@ struct EditHabitView: View {
 
                 if selectedType == .measurable {
                     Section("Einheit & Zielwert") {
+                        TextField("Zielwert", value: $targetValue, format: .number)
+                            .keyboardType(.numberPad)
+                        
                         TextField("Einheit", text: $unit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-
-                        TextField("Zielwert", value: $targetValue, format: .number)
-                            .keyboardType(.numberPad)
                     }
                 }
 
