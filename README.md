@@ -113,7 +113,7 @@ Models, Store, Views und Extensions in eigene Dateien getrennt.
 Tracking des Fortschritts über die Zeit, um Motivation und Rückmeldung zu verbessern:
 - **Streak-Anzeige:** Letzten 7 Tage (Daily) bzw. 7 Wochen (Weekly) als visuelle Übersicht (z. B. kleine Kreise/Kästchen, gefüllt = erledigt)
 - **Completion-Quote:** Prozentualer Anteil, wie oft ein Habit im gewählten Zeitraum abgeschlossen wurde (z. B. „5/7 – 71 %")
-- **Datenmodell-Erweiterung:** `completionLog: [Date]` – ein Array der Daten, an denen das Habit abgeschlossen wurde
+- **Datenmodell-Erweiterung:** `completionLog: [Date]` – ein Array der Daten, an denen das Habit abgeschlossen wurde. ✅ **erledigt**
 - Beim erfolgreichen Abschließen eines Habits wird das aktuelle Datum in `completionLog` eingetragen
 - Neuer UI-Baustein in der Detailansicht: `HabitStreakView` oder `HabitHistoryCard`
 
