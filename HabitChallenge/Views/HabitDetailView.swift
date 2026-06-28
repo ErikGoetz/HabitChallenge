@@ -9,91 +9,99 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Habit Detail View
+// MARK: - HabitDetailView
 
 struct HabitDetailView: View {
-    @Binding var habit: HabitItem
-    @State private var showingEditSheet = false
+    @EnvironmentObject private var store: HabitStore
 
-    var progress: Double {
-        guard habit.targetValue > 0 else { return 0 }
-        return min(Double(habit.currentValue) / Double(habit.targetValue), 1.0)
+    let habitID: UUID
+    @State private var showingEditSheet = false
+    @State private var measurableInput = ""
+
+    private var habit: HabitItem? {
+        store.habit(withID: habitID)
     }
 
     var body: some View {
-        ZStack {
-            Color(.systemGroupedBackground)
-                .ignoresSafeArea()
+        Group {
+            if let habit {
+                ZStack {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    HabitHeroCard(
-                        title: habit.title,
-                        icon: habit.icon,
-                        tint: habit.tintColor,
-                        frequency: habit.frequency,
-                        type: habit.type,
-                        rank: habit.rank,
-                        eventSummary: habit.eventSummary,
-                        isCompleted: habit.isCompleted
-                    )
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            HabitHeroCard(
+                                title: habit.title,
+                                icon: habit.icon,
+                                tint: habit.tintColor,
+                                frequency: habit.frequency,
+                                type: habit.type,
+                                rank: habit.rank,
+                                eventSummary: habit.eventSummary,
+                                isCompleted: habit.isCompleted
+                            )
 
-                    RankCard(
-                        rank: habit.rank,
-                        points: 400,
-                        tint: habit.tintColor
-                    )
+                            RankCard(
+                                rank: habit.rank,
+                                points: 400,
+                                tint: habit.tintColor
+                            )
 
-                    if habit.type == .measurable {
-                        MeasurableHabitCard(
-                            value: $habit.currentValue,
-                            targetValue: habit.targetValue,
-                            unit: habit.unit,
-                            tint: habit.tintColor
-                        )
-                    } else {
-                        BinaryHabitCard(
-                            isCompleted: $habit.isCompleted,
-                            currentValue: $habit.currentValue,
-                            tint: habit.tintColor
-                        )
+                            if habit.type == .measurable {
+                                MeasurableHabitCard(
+                                    value: habit.currentValue,
+                                    targetValue: habit.targetValue,
+                                    unit: habit.unit,
+                                    tint: habit.tintColor,
+                                    inputValue: $measurableInput,
+                                    onSetValue: { newValue in
+                                        store.updateMeasurableProgress(for: habit.id, to: newValue)
+                                    }
+                                )
+                            } else {
+                                BinaryHabitCard(
+                                    isCompleted: habit.isCompleted,
+                                    tint: habit.tintColor,
+                                    onToggle: {
+                                        store.toggleBinaryHabit(habit.id)
+                                    }
+                                )
+                            }
+                        }
+                        .padding()
+                        .padding(.bottom, 24)
                     }
                 }
-                .padding()
-                .padding(.bottom, 24)
-            }
-        }
-        .navigationTitle(habit.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showingEditSheet = true
-                } label: {
-                    Label("Bearbeiten", systemImage: "pencil")
+                .navigationTitle(habit.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showingEditSheet = true
+                        } label: {
+                            Label("Bearbeiten", systemImage: "pencil")
+                        }
+                    }
                 }
-            }
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            EditHabitView(habit: $habit)
-        }
-        .onChange(of: habit.currentValue) { _, _ in
-            if habit.currentValue < 0 {
-                habit.currentValue = 0
-            }
-
-            if habit.type == .measurable {
-                habit.isCompleted = habit.currentValue >= habit.targetValue
-            }
-        }
-        .onChange(of: habit.isCompleted) { _, newValue in
-            if habit.type == .binary {
-                habit.currentValue = newValue ? 1 : 0
+                .sheet(isPresented: $showingEditSheet) {
+                    EditHabitView(habit: habit)
+                        .environmentObject(store)
+                }
+                .onAppear {
+                    measurableInput = "\(habit.currentValue)"
+                }
+                .onChange(of: habit.currentValue) { _, newValue in
+                    measurableInput = "\(newValue)"
+                }
+            } else {
+                Text("Habit nicht gefunden")
             }
         }
     }
 }
-// MARK: - Hero Card
+
+// MARK: - HabitHeroCard
 
 struct HabitHeroCard: View {
     let title: String
@@ -121,16 +129,10 @@ struct HabitHeroCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.title2.bold())
-                    
-                    Text("\(frequency.title) · \(type == .binary ? "Einfach abhaken" : "Mit Zielwert")")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
 
-                    //if let rank {
-                        //Text(rank)
-                            //.font(.headline)
-                            //.foregroundStyle(.secondary)
-                    //}
+                    Text("\(frequency.title) · \(type == .binary ? "Einfach abhaken" : "Mit Zielwert")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -165,7 +167,8 @@ struct HabitHeroCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
-// MARK: - Rank Card
+
+// MARK: - RankCard
 
 struct RankCard: View {
     let rank: String?
@@ -174,10 +177,11 @@ struct RankCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack{
+            HStack {
                 Image(systemName: "trophy.fill")
                     .foregroundStyle(.yellow)
                     .font(.title2)
+
                 Text("Platzierung")
                     .font(.title2)
                     .bold()
@@ -192,12 +196,10 @@ struct RankCard: View {
 
                 SummaryChip(
                     title: "Punkte",
-                    value: "\(String(points))",
+                    value: "\(points)",
                     color: .yellow
                 )
             }
-
-
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
@@ -208,10 +210,12 @@ struct RankCard: View {
 // MARK: - MeasurableHabitCard
 
 struct MeasurableHabitCard: View {
-    @Binding var value: Int
+    let value: Int
     let targetValue: Int
     let unit: String
     let tint: Color
+    @Binding var inputValue: String
+    let onSetValue: (Int) -> Void
 
     private var progress: Double {
         guard targetValue > 0 else { return 0 }
@@ -243,9 +247,12 @@ struct MeasurableHabitCard: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
-                TextField("0", value: $value, format: .number)
+                TextField("0", text: $inputValue)
                     .keyboardType(.numberPad)
                     .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        onSetValue(Int(inputValue) ?? 0)
+                    }
 
                 Text(unit)
                     .font(.subheadline)
@@ -253,10 +260,10 @@ struct MeasurableHabitCard: View {
             }
 
             HStack(spacing: 10) {
-                QuickAddButton(title: "0") { value = 0 }
-                QuickAddButton(title: "+1") { value += 1 }
-                QuickAddButton(title: "+5") { value += 5 }
-                QuickAddButton(title: "Ziel") { value = targetValue }
+                QuickAddButton(title: "0") { onSetValue(0) }
+                QuickAddButton(title: "+1") { onSetValue(value + 1) }
+                QuickAddButton(title: "+5") { onSetValue(value + 5) }
+                QuickAddButton(title: "Ziel") { onSetValue(targetValue) }
             }
         }
         .padding()
@@ -265,29 +272,12 @@ struct MeasurableHabitCard: View {
     }
 }
 
-struct QuickAddButton: View {
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(Color(.tertiarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 // MARK: - BinaryHabitCard
 
 struct BinaryHabitCard: View {
-    @Binding var isCompleted: Bool
-    @Binding var currentValue: Int
+    let isCompleted: Bool
     let tint: Color
+    let onToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -318,10 +308,7 @@ struct BinaryHabitCard: View {
                 Spacer()
             }
 
-            Button {
-                isCompleted.toggle()
-                currentValue = isCompleted ? 1 : 0
-            } label: {
+            Button(action: onToggle) {
                 Text(isCompleted ? "Als nicht erledigt markieren" : "Als erledigt markieren")
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
@@ -335,5 +322,24 @@ struct BinaryHabitCard: View {
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+// MARK: - QuickAddButton
+
+struct QuickAddButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Color(.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

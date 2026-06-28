@@ -19,6 +19,8 @@
 		FFB8ECF12FD0897500E42F7A /* AddHabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF02FD0897500E42F7A /* AddHabitView.swift */; };
 		FFB8ECF32FD08A1B00E42F7A /* HabitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF22FD08A1B00E42F7A /* HabitDetailView.swift */; };
 		FFB8ECF52FD08F3900E42F7A /* EditHabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB8ECF42FD08F3900E42F7A /* EditHabitView.swift */; };
+		FFDC764C2FF1725100503BE5 /* HabitHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDC764B2FF1725100503BE5 /* HabitHistoryEntry.swift */; };
+		FFDC764E2FF1737600503BE5 /* PeriodExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDC764D2FF1737600503BE5 /* PeriodExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +37,8 @@
 		FFB8ECF02FD0897500E42F7A /* AddHabitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddHabitView.swift; sourceTree = "<group>"; };
 		FFB8ECF22FD08A1B00E42F7A /* HabitDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitDetailView.swift; sourceTree = "<group>"; };
 		FFB8ECF42FD08F3900E42F7A /* EditHabitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditHabitView.swift; sourceTree = "<group>"; };
+		FFDC764B2FF1725100503BE5 /* HabitHistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitHistoryEntry.swift; sourceTree = "<group>"; };
+		FFDC764D2FF1737600503BE5 /* PeriodExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				FF5A2B282FCF46AE0065B708 /* ColorExtension.swift */,
+				FFDC764D2FF1737600503BE5 /* PeriodExtension.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -119,6 +124,7 @@
 				FFB8ECEA2FD0856100E42F7A /* HabitItem.swift */,
 				FFB8ECEC2FD0869A00E42F7A /* HabitFrequency.swift */,
 				FFB8ECEE2FD088D400E42F7A /* HabitType.swift */,
+				FFDC764B2FF1725100503BE5 /* HabitHistoryEntry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -194,12 +200,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				FF5A2B2B2FCF49CC0065B708 /* HabitStore.swift in Sources */,
+				FFDC764C2FF1725100503BE5 /* HabitHistoryEntry.swift in Sources */,
 				FFB8ECF12FD0897500E42F7A /* AddHabitView.swift in Sources */,
 				FFB8ECF32FD08A1B00E42F7A /* HabitDetailView.swift in Sources */,
 				FFB8ECF52FD08F3900E42F7A /* EditHabitView.swift in Sources */,
 				FF5A2B292FCF46AE0065B708 /* ColorExtension.swift in Sources */,
 				FFB8ECEB2FD0856100E42F7A /* HabitItem.swift in Sources */,
 				FFB8ECEF2FD088D400E42F7A /* HabitType.swift in Sources */,
+				FFDC764E2FF1737600503BE5 /* PeriodExtension.swift in Sources */,
 				FFB2C8452FB254EC004CC593 /* MainView.swift in Sources */,
 				FFB2C8432FB254EC004CC593 /* HabitChallengeApp.swift in Sources */,
 				FFB8ECED2FD0869A00E42F7A /* HabitFrequency.swift in Sources */,

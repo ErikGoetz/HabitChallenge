@@ -1,5 +1,3 @@
-//Storage of the Habitdata
-
 import Foundation
 
 final class HabitStore: ObservableObject {
@@ -20,12 +18,12 @@ final class HabitStore: ObservableObject {
     }
 
     func addHabit(_ habit: HabitItem) {
-        habits.append(habit)
+        habits.append(normalizedHabit(habit))
     }
 
     func updateHabit(_ updatedHabit: HabitItem) {
         guard let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) else { return }
-        habits[index] = updatedHabit
+        habits[index] = normalizedHabit(updatedHabit)
     }
 
     func deleteHabit(_ habit: HabitItem) {
@@ -38,14 +36,21 @@ final class HabitStore: ObservableObject {
 
         habits[index].isCompleted.toggle()
         habits[index].currentValue = habits[index].isCompleted ? 1 : 0
+        upsertHistoryEntry(for: index)
     }
 
     func updateMeasurableProgress(for habitID: UUID, to newValue: Int) {
         guard let index = habits.firstIndex(where: { $0.id == habitID }) else { return }
         guard habits[index].type == .measurable else { return }
 
-        habits[index].currentValue = newValue
-        habits[index].isCompleted = newValue >= habits[index].targetValue
+        let clampedValue = max(0, newValue)
+        habits[index].currentValue = clampedValue
+        habits[index].isCompleted = clampedValue >= habits[index].targetValue
+        upsertHistoryEntry(for: index)
+    }
+
+    func habit(withID habitID: UUID) -> HabitItem? {
+        habits.first(where: { $0.id == habitID })
     }
 
     func resetHabitsIfNeeded(now: Date = Date()) {
@@ -75,7 +80,6 @@ final class HabitStore: ObservableObject {
                 updatedHabits[index].currentValue = 0
                 updatedHabits[index].isCompleted = false
             }
-
             defaults.set(now, forKey: lastDailyResetKey)
             didChange = true
         }
@@ -85,7 +89,6 @@ final class HabitStore: ObservableObject {
                 updatedHabits[index].currentValue = 0
                 updatedHabits[index].isCompleted = false
             }
-
             defaults.set(now, forKey: lastWeeklyResetKey)
             didChange = true
         }
@@ -93,6 +96,30 @@ final class HabitStore: ObservableObject {
         if didChange {
             habits = updatedHabits
         }
+    }
+
+    private func normalizedHabit(_ habit: HabitItem) -> HabitItem {
+        var habit = habit
+
+        if habit.type == .binary {
+            habit.targetValue = 1
+            habit.unit = "Erledigt"
+            habit.currentValue = habit.isCompleted ? 1 : 0
+        } else {
+            habit.targetValue = max(habit.targetValue, 1)
+            habit.currentValue = max(habit.currentValue, 0)
+            if habit.unit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                habit.unit = "Mal"
+            }
+            habit.isCompleted = habit.currentValue >= habit.targetValue
+        }
+
+        if habit.icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            habit.icon = "star.fill"
+        }
+
+        habit.title = habit.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return habit
     }
 
     private func shouldResetDailyHabits(
@@ -142,6 +169,31 @@ final class HabitStore: ObservableObject {
             habits = try JSONDecoder().decode([HabitItem].self, from: data)
         } catch {
             print("Fehler beim Laden der Habits: \(error)")
+        }
+    }
+
+    private func upsertHistoryEntry(for habitIndex: Int, now: Date = Date()) {
+        let calendar = Calendar.current
+        let habit = habits[habitIndex]
+        let periodStart = calendar.startOfHabitPeriod(for: habit.frequency, from: now)
+
+        if let historyIndex = habit.history.firstIndex(where: { entry in
+            entry.periodStart == periodStart
+        }) {
+            habits[habitIndex].history[historyIndex].value = habit.currentValue
+            habits[habitIndex].history[historyIndex].targetValue = habit.targetValue
+            habits[habitIndex].history[historyIndex].isCompleted = habit.isCompleted
+            habits[habitIndex].history[historyIndex].updatedAt = now
+        } else {
+            let newEntry = HabitHistoryEntry(
+                id: UUID(),
+                periodStart: periodStart,
+                value: habit.currentValue,
+                targetValue: habit.targetValue,
+                isCompleted: habit.isCompleted,
+                updatedAt: now
+            )
+            habits[habitIndex].history.append(newEntry)
         }
     }
 }

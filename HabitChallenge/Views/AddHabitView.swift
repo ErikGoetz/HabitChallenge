@@ -51,7 +51,7 @@ struct AddHabitView: View {
     ]
     
     @Environment(\.dismiss) private var dismiss
-    @Binding var habits: [HabitItem]
+    @EnvironmentObject private var store: HabitStore
     
     @State private var title = ""
     @State private var icon = ""
@@ -180,23 +180,23 @@ struct AddHabitView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Speichern") {
-                        let newHabit = HabitItem(
-                            id: UUID(),
-                            title: title,
-                            icon: icon.isEmpty ? "star.fill" : icon,
-                            tintHex: selectedColor.hexString,
-                            type: selectedType,
-                            frequency: selectedFrequency,
-                            currentValue: 0,
-                            targetValue: selectedType == .binary ? 1 : max(targetValue ?? 1, 1),
-                            unit: selectedType == .binary ? "Erledigt" : (unit.isEmpty ? "Mal" : unit),
-                            rank: nil,
-                            eventSummary: nil,
-                            hasActiveCard: false,
-                            isCompleted: false
+                        store.addHabit(
+                            HabitItem(
+                                id: UUID(),
+                                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                                icon: icon.isEmpty ? "star.fill" : icon,
+                                tintHex: selectedColor.hexString,
+                                type: selectedType,
+                                frequency: selectedFrequency,
+                                currentValue: 0,
+                                targetValue: selectedType == .binary ? 1 : max(targetValue ?? 1, 1),
+                                unit: selectedType == .binary ? "Erledigt" : (unit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Mal" : unit),
+                                rank: nil,
+                                eventSummary: nil,
+                                hasActiveCard: false,
+                                isCompleted: false
+                            )
                         )
-
-                        habits.append(newHabit)
                         dismiss()
                     }
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

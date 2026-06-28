@@ -14,20 +14,20 @@ struct MainView: View {
     @State private var navigationPath = NavigationPath()
     @Environment(\.scenePhase) private var scenePhase
 
-    private var dailyHabitIndices: [Int] {
-        store.habits.indices.filter { store.habits[$0].frequency == .daily }
+    private var dailyHabits: [HabitItem] {
+        store.habits.filter { $0.frequency == .daily }
     }
 
-    private var weeklyHabitIndices: [Int] {
-        store.habits.indices.filter { store.habits[$0].frequency == .weekly }
+    private var weeklyHabits: [HabitItem] {
+        store.habits.filter { $0.frequency == .weekly }
     }
 
     private var completedDailyCount: Int {
-        dailyHabitIndices.filter { store.habits[$0].isCompleted }.count
+        dailyHabits.filter(\.isCompleted).count
     }
 
     private var completedWeeklyCount: Int {
-        weeklyHabitIndices.filter { store.habits[$0].isCompleted }.count
+        weeklyHabits.filter(\.isCompleted).count
     }
 
     private var newEventsCount: Int {
@@ -40,9 +40,9 @@ struct MainView: View {
                 Section {
                     HabitSummary(
                         completedDailyCount: completedDailyCount,
-                        totalDailyCount: dailyHabitIndices.count,
+                        totalDailyCount: dailyHabits.count,
                         completedWeeklyCount: completedWeeklyCount,
-                        totalWeeklyCount: weeklyHabitIndices.count,
+                        totalWeeklyCount: weeklyHabits.count,
                         newEventsCount: newEventsCount
                     )
                     .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 4, trailing: 0))
@@ -63,17 +63,17 @@ struct MainView: View {
 
                 HabitListSection(
                     title: "Daily Habits",
-                    indices: dailyHabitIndices,
-                    habits: $store.habits,
+                    habits: dailyHabits,
                     navigationPath: $navigationPath
                 )
+                .environmentObject(store)
 
                 HabitListSection(
                     title: "Weekly Habits",
-                    indices: weeklyHabitIndices,
-                    habits: $store.habits,
+                    habits: weeklyHabits,
                     navigationPath: $navigationPath
                 )
+                .environmentObject(store)   
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -89,14 +89,12 @@ struct MainView: View {
                 }
             }
             .sheet(isPresented: $showingAddHabitSheet) {
-                AddHabitView(habits: $store.habits)
+                AddHabitView()
+                    .environmentObject(store)
             }
             .navigationDestination(for: UUID.self) { habitID in
-                if let index = store.habits.firstIndex(where: { $0.id == habitID }) {
-                    HabitDetailView(habit: $store.habits[index])
-                } else {
-                    Text("Habit nicht gefunden")
-                }
+                HabitDetailView(habitID: habitID)
+                    .environmentObject(store)
             }
             .onAppear {
                 store.resetHabitsIfNeeded()
@@ -110,9 +108,6 @@ struct MainView: View {
     }
 }
 
-
-// MARK: - Components
-
 struct HabitSummary: View {
     let completedDailyCount: Int
     let totalDailyCount: Int
@@ -122,9 +117,6 @@ struct HabitSummary: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            //Text("Übersicht")
-                //.font(.headline)
-
             HStack(spacing: 12) {
                 SummaryChip(
                     title: "Heute",
@@ -150,6 +142,8 @@ struct HabitSummary: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
+
+// MARK: - Components
 
 struct SummaryChip: View {
     let title: String
@@ -194,8 +188,6 @@ struct ChallengeEventBanner: View {
     }
 }
 
-// MARK: - HabitCardView
-
 struct HabitCardView: View {
     let habit: HabitItem
 
@@ -212,40 +204,13 @@ struct HabitCardView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(habit.title)
-                            .font(.title3)
-                            .bold()
+                    Text(habit.title)
+                        .font(.title3)
+                        .bold()
 
-                        /*if habit.hasActiveCard {
-                            Text("Karte aktiv")
-                                .font(.caption.weight(.semibold))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.orange.opacity(0.14))
-                                .foregroundStyle(.orange)
-                                .clipShape(Capsule())
-                        }*/
-                    }
-                    //HStack{
-                        //Image(systemName: "trophy.fill")
-                            .font(.subheadline)
-                        
-                        //if let rank = habit.rank {
-                            //Text("\(rank). Platz")
-                                .font(.headline)
-                        //}
-                            
-                        
-                    //}
-                    
-                    //Spacer()
-                        
                     Text("\(habit.currentValue) / \(habit.targetValue) \(habit.unit)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-
-                    
                 }
 
                 Spacer()
@@ -287,34 +252,30 @@ struct HabitCardView: View {
 // MARK: - HabitListSection
 
 struct HabitListSection: View {
-    let title: String
-    let indices: [Int]
-    @Binding var habits: [HabitItem]
-    @Binding var navigationPath: NavigationPath
+    @EnvironmentObject private var store: HabitStore
 
-    private func deleteHabit(at index: Int) {
-        guard habits.indices.contains(index) else { return }
-        habits.remove(at: index)
-    }
+    let title: String
+    let habits: [HabitItem]
+    @Binding var navigationPath: NavigationPath
 
     var body: some View {
         Section(title) {
-            if indices.isEmpty {
+            if habits.isEmpty {
                 EmptyHabitCard(
                     title: "Noch keine Habits",
                     subtitle: title == "Daily Habits"
-                        ? "Lege ein tägliches Habit an, um hier zu starten."
-                        : "Lege ein wöchentliches Habit an, um hier zu starten."
+                    ? "Lege ein tägliches Habit an, um hier zu starten."
+                    : "Lege ein wöchentliches Habit an, um hier zu starten."
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             } else {
-                ForEach(indices, id: \.self) { index in
+                ForEach(habits) { habit in
                     Button {
-                        navigationPath.append(habits[index].id)
+                        navigationPath.append(habit.id)
                     } label: {
-                        HabitCardView(habit: habits[index])
+                        HabitCardView(habit: habit)
                     }
                     .buttonStyle(.plain)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -322,7 +283,7 @@ struct HabitListSection: View {
                     .listRowSeparator(.hidden)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
-                            deleteHabit(at: index)
+                            store.deleteHabit(habit)
                         } label: {
                             Label("Löschen", systemImage: "trash")
                         }
@@ -330,8 +291,6 @@ struct HabitListSection: View {
                 }
             }
         }
-        .font(.subheadline)
-        .foregroundStyle(.primary)
     }
 }
 

@@ -23,6 +23,7 @@ struct HabitItem: Identifiable, Hashable, Codable {
     var eventSummary: String?
     var hasActiveCard: Bool
     var isCompleted: Bool
+    var history: [HabitHistoryEntry] = []
 
     var progress: Double {
         guard targetValue > 0 else { return 0 }

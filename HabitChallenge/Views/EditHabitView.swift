@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+// MARK: - EditHabitView
+
 struct EditHabitView: View {
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 6)
 
@@ -20,7 +22,9 @@ struct EditHabitView: View {
     ]
 
     @Environment(\.dismiss) private var dismiss
-    @Binding var habit: HabitItem
+    @EnvironmentObject private var store: HabitStore
+
+    let habit: HabitItem
 
     @State private var title: String
     @State private var icon: String
@@ -30,15 +34,15 @@ struct EditHabitView: View {
     @State private var selectedType: HabitType
     @State private var selectedFrequency: HabitFrequency
 
-    init(habit: Binding<HabitItem>) {
-        _habit = habit
-        _title = State(initialValue: habit.wrappedValue.title)
-        _icon = State(initialValue: habit.wrappedValue.icon)
-        _targetValue = State(initialValue: habit.wrappedValue.targetValue)
-        _unit = State(initialValue: habit.wrappedValue.unit)
-        _selectedColor = State(initialValue: habit.wrappedValue.tintColor)
-        _selectedType = State(initialValue: habit.wrappedValue.type)
-        _selectedFrequency = State(initialValue: habit.wrappedValue.frequency)
+    init(habit: HabitItem) {
+        self.habit = habit
+        _title = State(initialValue: habit.title)
+        _icon = State(initialValue: habit.icon)
+        _targetValue = State(initialValue: habit.targetValue)
+        _unit = State(initialValue: habit.unit)
+        _selectedColor = State(initialValue: habit.tintColor)
+        _selectedType = State(initialValue: habit.type)
+        _selectedFrequency = State(initialValue: habit.frequency)
     }
 
     var body: some View {
@@ -83,7 +87,7 @@ struct EditHabitView: View {
                     Section("Einheit & Zielwert") {
                         TextField("Zielwert", value: $targetValue, format: .number)
                             .keyboardType(.numberPad)
-                        
+
                         TextField("Einheit", text: $unit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -130,22 +134,24 @@ struct EditHabitView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Speichern") {
-                        habit.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-                        habit.icon = icon.isEmpty ? "star.fill" : icon
-                        habit.tintHex = selectedColor.hexString
-                        habit.type = selectedType
-                        habit.frequency = selectedFrequency
+                        var updatedHabit = habit
+                        updatedHabit.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        updatedHabit.icon = icon.isEmpty ? "star.fill" : icon
+                        updatedHabit.tintHex = selectedColor.hexString
+                        updatedHabit.type = selectedType
+                        updatedHabit.frequency = selectedFrequency
 
                         if selectedType == .binary {
-                            habit.targetValue = 1
-                            habit.unit = "Erledigt"
-                            habit.currentValue = habit.isCompleted ? 1 : 0
+                            updatedHabit.targetValue = 1
+                            updatedHabit.unit = "Erledigt"
+                            updatedHabit.currentValue = updatedHabit.isCompleted ? 1 : 0
                         } else {
-                            habit.targetValue = max(targetValue ?? 1, 1)
-                            habit.unit = unit.isEmpty ? "Mal" : unit
-                            habit.isCompleted = habit.currentValue >= habit.targetValue
+                            updatedHabit.targetValue = max(targetValue ?? 1, 1)
+                            updatedHabit.unit = unit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Mal" : unit
+                            updatedHabit.isCompleted = updatedHabit.currentValue >= updatedHabit.targetValue
                         }
 
+                        store.updateHabit(updatedHabit)
                         dismiss()
                     }
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
