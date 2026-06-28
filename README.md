@@ -27,6 +27,7 @@ Mittelfristig soll sich die App zu einer vollständigen **Habit-Zentrale mit Cha
 - **Habit anlegen (`AddHabitView`):** Sheet mit Typauswahl, Icon, Farbe, Zielwert, Frequenz
 - **Habit bearbeiten (`EditHabitView`):** Edit-Button oben rechts in der Detailansicht, eigenes Sheet
 - **Persistenz:** `HabitStore` mit `UserDefaults`, `@Published`-State, automatisches Laden beim Start
+- **Reset:** Automatischer Reset des Habitfortschritts der Frequenz entsprechend.
 - **Navigation:** `NavigationStack`, UUID-basierte Navigation zur Detailansicht
 - **Dateistruktur:** Aufgeteilt in `Models/`, `Stores/`, `Views/`, `Extensions/`
 
@@ -86,13 +87,13 @@ HabitChallenge/
 
 | Bug | Status |
 |---|---|
-| Dark-Mode-Sheet-Bug: weißer/heller Streifen oben beim Öffnen von `AddHabitView` | Noch offen – `Form`, Safe-Area und NavigationStack als mögliche Ursachen identifiziert |
+| Dark-Mode-Sheet-Bug: weißer/heller Streifen oben beim Öffnen von `AddHabitView` | Erledigt. Der Bug wird nur in der Preview in Xcode sichtbar. Die Installation auf dem Handy hat gezeigt, dass sich das Sheet sauber und ohne optisch unsauberen Balken öffnen lässt |
 
 ---
 
 ## Nächste Schritte (priorisiert)
 
-> **Schritte 1 und 2 sind erledigt** (Refaktorierung + EditHabitView).
+> **Schritte 1, 2 und 3 sind erledigt**
 
 ### ✅ Schritt 1 – Zwischen-Refaktorierung (ERLEDIGT)
 Models, Store, Views und Extensions in eigene Dateien getrennt.
